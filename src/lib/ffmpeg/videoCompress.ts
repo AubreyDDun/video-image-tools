@@ -1,5 +1,8 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+import { fetchFile, blobToUint8Array } from '@ffmpeg/util';
+
+const CORE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js';
+const WASM_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm';
 
 export async function compressVideo(
   file: File,
@@ -9,19 +12,16 @@ export async function compressVideo(
   
   // 加载 FFmpeg.wasm
   await ffmpeg.load({
-    coreURL: await fetchFile(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js'
-    ),
-    wasmURL: await fetchFile(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm'
-    ),
+    coreURL: CORE_URL,
+    wasmURL: WASM_URL,
   });
 
   // 写入文件
   const inputName = 'input.mp4';
   const outputName = 'output.mp4';
   
-  ffmpeg.writeFile(inputName, await fetchFile(file));
+  const fileData = await blobToUint8Array(file);
+  ffmpeg.writeFile(inputName, fileData);
 
   // 压缩参数（CRF 越高质量越低，文件越小）
   const crf = Math.round(28 + (1 - quality) * 23); // 28-51

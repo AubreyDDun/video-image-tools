@@ -1,7 +1,10 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+import { blobToUint8Array } from '@ffmpeg/util';
 
 type OutputFormat = 'mp4' | 'webm' | 'avi' | 'mov' | 'gif';
+
+const CORE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js';
+const WASM_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm';
 
 export async function convertVideo(
   file: File,
@@ -10,18 +13,15 @@ export async function convertVideo(
   const ffmpeg = new FFmpeg();
   
   await ffmpeg.load({
-    coreURL: await fetchFile(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js'
-    ),
-    wasmURL: await fetchFile(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm'
-    ),
+    coreURL: CORE_URL,
+    wasmURL: WASM_URL,
   });
 
   const inputName = 'input';
   const outputName = `output.${format}`;
   
-  ffmpeg.writeFile(`${inputName}`, await fetchFile(file));
+  const fileData = await blobToUint8Array(file);
+  ffmpeg.writeFile(inputName, fileData);
 
   // 根据格式调整参数
   const args: string[] = ['-i', inputName];
