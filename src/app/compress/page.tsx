@@ -13,22 +13,35 @@ export default function VideoCompressPage() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ blob: Blob; size: number } | null>(null);
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   const handleCompress = async () => {
     if (!file) return;
 
+    setLoading(true);
     setStatus('processing');
     setProgress(10);
+    setError('');
 
     try {
+      // 模拟进度更新（FFmpeg.wasm 不提供进度回调）
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 5, 90));
+      }, 500);
+
       setProgress(30);
       const result = await compressVideo(file, quality / 100);
+      
+      clearInterval(progressInterval);
       setProgress(100);
       setResult(result);
       setStatus('complete');
     } catch (err) {
-      setError(err instanceof Error ? err.message : '压缩失败');
+      console.error('压缩失败:', err);
+      setError(err instanceof Error ? err.message : '压缩失败，请检查视频格式');
       setStatus('error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,32 +49,48 @@ export default function VideoCompressPage() {
     ? ((1 - result.size / file.size) * 100).toFixed(1) 
     : null;
 
+  // 检测视频格式
+  const getVideoFormat = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const formats: Record<string, string> = {
+      'mp4': 'MP4 (H.264)',
+      'mov': 'MOV (iPhone)',
+      'avi': 'AVI',
+      'webm': 'WebM',
+      'mkv': 'MKV',
+      'm4v': 'M4V',
+      'hevc': 'HEVC/H.265',
+      'h265': 'HEVC/H.265',
+    };
+    return formats[ext || ''] || ext?.toUpperCase();
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold text-gray-900">视频压缩</h1>
-        <p className="text-gray-600">
-          在线压缩视频文件，减小文件大小，保持画质
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">视频压缩</h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          在线压缩视频文件，支持 MP4、MOV、HEVC 等格式
         </p>
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-3 gap-4 text-center">
-        <div className="p-4 bg-blue-50 rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
           <div className="text-2xl mb-2">🔒</div>
-          <div className="text-sm font-medium">本地处理</div>
-          <div className="text-xs text-gray-500">文件不上传服务器</div>
+          <div className="text-sm font-medium text-gray-900 dark:text-white">本地处理</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">文件不上传服务器</div>
         </div>
-        <div className="p-4 bg-green-50 rounded-lg">
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
           <div className="text-2xl mb-2">⚡</div>
-          <div className="text-sm font-medium">快速压缩</div>
-          <div className="text-xs text-gray-500">智能压缩算法</div>
+          <div className="text-sm font-medium text-gray-900 dark:text-white">H.264/HEVC</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">支持 iPhone 格式</div>
         </div>
-        <div className="p-4 bg-purple-50 rounded-lg">
+        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-center">
           <div className="text-2xl mb-2">🎯</div>
-          <div className="text-sm font-medium">可调质量</div>
-          <div className="text-xs text-gray-500">自由控制压缩比</div>
+          <div className="text-sm font-medium text-gray-900 dark:text-white">可调质量</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">自由控制压缩比</div>
         </div>
       </div>
 
@@ -69,15 +98,15 @@ export default function VideoCompressPage() {
       <FileUploader
         accept="video/*"
         onFileSelect={setFile}
-        label="选择视频文件（MP4、MOV、AVI 等）"
+        label="选择视频文件（MP4、MOV、HEVC、AVI 等）"
       />
 
       {/* Quality Slider */}
       {file && (
-        <div className="space-y-4 p-6 bg-gray-50 rounded-lg">
+        <div className="space-y-4 p-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="flex items-center justify-between">
-            <label className="font-medium text-gray-700">压缩质量</label>
-            <span className="text-blue-600 font-medium">{quality}%</span>
+            <label className="font-medium text-gray-700 dark:text-gray-300">压缩质量</label>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{quality}%</span>
           </div>
           <input
             type="range"
@@ -85,18 +114,25 @@ export default function VideoCompressPage() {
             max="100"
             value={quality}
             onChange={(e) => setQuality(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
           />
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span>高压缩 (30%)</span>
             <span>低压缩 (100%)</span>
           </div>
           
-          {file && (
-            <div className="text-sm text-gray-600">
-              原文件大小：{(file.size / 1024 / 1024).toFixed(2)} MB
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">文件格式：</span>
+                <span className="font-medium text-gray-900 dark:text-white">{getVideoFormat(file.name)}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">原始大小：</span>
+                <span className="font-medium text-gray-900 dark:text-white">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -104,10 +140,10 @@ export default function VideoCompressPage() {
       {file && !result && (
         <button
           onClick={handleCompress}
-          disabled={status === 'processing'}
-          className="w-full py-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || status === 'processing'}
+          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {status === 'processing' ? '处理中...' : '开始压缩'}
+          {loading ? '处理中...' : '开始压缩'}
         </button>
       )}
 
@@ -121,23 +157,40 @@ export default function VideoCompressPage() {
 
       {/* Download */}
       {result && file && (
-        <div className="space-y-4 p-6 bg-green-50 rounded-lg">
+        <div className="space-y-4 p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">原始大小：</span>
-              <span className="font-medium">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+              <span className="text-gray-500 dark:text-gray-400">原始大小：</span>
+              <span className="font-medium text-gray-900 dark:text-white">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
             </div>
             <div>
-              <span className="text-gray-500">压缩后：</span>
-              <span className="font-medium text-green-600">{(result.size / 1024 / 1024).toFixed(2)} MB</span>
+              <span className="text-gray-500 dark:text-gray-400">压缩后：</span>
+              <span className="font-medium text-green-600 dark:text-green-400">{(result.size / 1024 / 1024).toFixed(2)} MB</span>
             </div>
           </div>
+          {compressionRatio && (
+            <div className="text-center text-sm text-gray-600 dark:text-gray-300">
+              节省了 <span className="font-bold text-green-600 dark:text-green-400">{compressionRatio}%</span> 的空间
+            </div>
+          )}
           <DownloadButton
             blob={result.blob}
             filename={`compressed_${file.name}`}
             label="下载压缩后的视频"
             className="w-full justify-center"
           />
+          <button
+            onClick={() => {
+              setFile(null);
+              setResult(null);
+              setStatus('idle');
+              setError('');
+              setProgress(0);
+            }}
+            className="w-full py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            压缩另一个文件
+          </button>
         </div>
       )}
     </div>
