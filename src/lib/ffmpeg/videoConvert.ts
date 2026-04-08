@@ -1,5 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { blobToUint8Array } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 type OutputFormat = 'mp4' | 'webm' | 'avi' | 'mov' | 'gif';
 
@@ -20,8 +20,7 @@ export async function convertVideo(
   const inputName = 'input';
   const outputName = `output.${format}`;
   
-  const fileData = await blobToUint8Array(file);
-  ffmpeg.writeFile(inputName, fileData);
+  ffmpeg.writeFile(inputName, await fetchFile(file));
 
   // 根据格式调整参数
   const args: string[] = ['-i', inputName];
@@ -43,7 +42,13 @@ export async function convertVideo(
 
   const outputData = await ffmpeg.readFile(outputName);
   const mimeType = format === 'gif' ? 'image/gif' : `video/${format}`;
-  const blob = new Blob([outputData], { type: mimeType });
+  // 确保是 Uint8Array 类型并创建 ArrayBuffer 拷贝
+  const uint8Array = outputData as Uint8Array;
+  const arrayBuffer = uint8Array.buffer.slice(
+    uint8Array.byteOffset,
+    uint8Array.byteOffset + uint8Array.byteLength
+  ) as ArrayBuffer;
+  const blob = new Blob([arrayBuffer], { type: mimeType });
   
   await ffmpeg.deleteFile(inputName);
   await ffmpeg.deleteFile(outputName);

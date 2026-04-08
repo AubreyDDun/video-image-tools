@@ -1,5 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, blobToUint8Array } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 const CORE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.js';
 const WASM_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm/ffmpeg-core.wasm';
@@ -20,8 +20,7 @@ export async function compressVideo(
   const inputName = 'input.mp4';
   const outputName = 'output.mp4';
   
-  const fileData = await blobToUint8Array(file);
-  ffmpeg.writeFile(inputName, fileData);
+  ffmpeg.writeFile(inputName, await fetchFile(file));
 
   // 压缩参数（CRF 越高质量越低，文件越小）
   const crf = Math.round(28 + (1 - quality) * 23); // 28-51
@@ -38,7 +37,13 @@ export async function compressVideo(
 
   // 读取输出
   const outputData = await ffmpeg.readFile(outputName);
-  const blob = new Blob([outputData], { type: 'video/mp4' });
+  // 确保是 Uint8Array 类型并创建 ArrayBuffer 拷贝
+  const uint8Array = outputData as Uint8Array;
+  const arrayBuffer = uint8Array.buffer.slice(
+    uint8Array.byteOffset,
+    uint8Array.byteOffset + uint8Array.byteLength
+  ) as ArrayBuffer;
+  const blob = new Blob([arrayBuffer], { type: 'video/mp4' });
   
   // 清理
   await ffmpeg.deleteFile(inputName);
