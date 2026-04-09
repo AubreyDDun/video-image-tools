@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import ThemeToggle from '@/components/ThemeToggle';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -48,6 +50,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 py-4">
@@ -65,6 +73,7 @@ export default function RootLayout({
                 <a href="/image/compress" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   图片压缩
                 </a>
+                <ThemeToggle />
               </div>
             </nav>
           </div>
@@ -104,6 +113,7 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
+        </ThemeProvider>
       </body>
     </html>
   );
