@@ -1,35 +1,47 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+// @ts-ignore - FFmpeg.wasm 0.11.x uses global FFmpeg object
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
-// 使用 core-mt（多线程版本，支持 H.264/HEVC 等更多编解码器）
-const CORE_URL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.10/dist/esm/ffmpeg-core.js';
-const WASM_URL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.10/dist/esm/ffmpeg-core.wasm';
+// 创建 FFmpeg 实例（0.11.x API）
+const ffmpeg = createFFmpeg({
+  corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+  log: false,
+});
 
 export async function compressVideo(
   file: File,
-  quality: number = 0.7
+  quality: number = 0.7,
+  onProgress?: (progress: number) => void
 ): Promise<{ blob: Blob; size: number }> {
-  const ffmpeg = new FFmpeg();
-  
   try {
-    // 加载 FFmpeg.wasm（多线程版本）
-    await ffmpeg.load({
-      coreURL: CORE_URL,
-      wasmURL: WASM_URL,
-    });
+    onProgress?.(5);
+    
+    // 加载 FFmpeg.wasm
+    if (!ffmpeg.isLoaded()) {
+      await ffmpeg.load();
+    }
+    
+    onProgress?.(15);
 
-    // 写入文件
     const inputName = 'input.mp4';
     const outputName = 'output.mp4';
     
-    ffmpeg.writeFile(inputName, await fetchFile(file));
+    onProgress?.(25);
+    
+    const fileData = await fetchFile(file);
+    ffmpeg.FS('writeFile', inputName, fileData);
+    
+    onProgress?.(35);
 
-    // 压缩参数（CRF 越高质量越低，文件越小）
-    // H.264 CRF 范围：0-51，推荐 18-28
     const crf = Math.round(18 + (1 - quality) * 23);
     
-    // 执行压缩（使用 H.264 编解码器）
-    await ffmpeg.exec([
+    onProgress?.(40);
+    
+    ffmpeg.setProgress(({ ratio }) => {
+      const progress = Math.min(40 + ratio * 50, 95);
+      onProgress?.(progress);
+    });
+    
+    await ffmpeg.run(
       '-i', inputName,
       '-c:v', 'libx264',
       '-preset', 'medium',
@@ -38,33 +50,27 @@ export async function compressVideo(
       '-b:a', '128k',
       '-movflags', '+faststart',
       outputName
-    ]);
-
-    // 读取输出
-    const outputData = await ffmpeg.readFile(outputName);
-    const uint8Array = outputData as Uint8Array;
-    const arrayBuffer = uint8Array.buffer.slice(
-      uint8Array.byteOffset,
-      uint8Array.byteOffset + uint8Array.byteLength
-    ) as ArrayBuffer;
-    const blob = new Blob([arrayBuffer], { type: 'video/mp4' });
+    );
     
-    // 清理
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(outputName);
-    await ffmpeg.terminate();
+    onProgress?.(90);
+
+    const outputData = ffmpeg.FS('readFile', outputName);
+    const blob = new Blob([outputData.buffer as ArrayBuffer], { type: 'video/mp4' });
+    
+    onProgress?.(95);
+    
+    ffmpeg.FS('unlink', inputName);
+    ffmpeg.FS('unlink', outputName);
+    
+    onProgress?.(100);
 
     return {
       blob,
       size: blob.size,
     };
   } catch (error) {
-    console.error('视频压缩失败:', error);
-    try {
-      await ffmpeg.terminate();
-    } catch (e) {
-      // 忽略 terminate 错误
-    }
-    throw new Error(`视频压缩失败：${error instanceof Error ? error.message : '未知错误'}`);
+    console.error('[视频压缩] 失败:', error);
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    throw new Error(`视频压缩失败：${errorMessage}`);
   }
 }

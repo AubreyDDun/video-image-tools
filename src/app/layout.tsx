@@ -56,13 +56,13 @@ export default function RootLayout({
                 🎬 视频工具站
               </a>
               <div className="flex items-center gap-6">
-                <a href="/video/compress" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <a href="/video/compress" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   视频压缩
                 </a>
-                <a href="/video/convert" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <a href="/video/convert" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   格式转换
                 </a>
-                <a href="/image/compress" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <a href="/image/compress" className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   图片压缩
                 </a>
               </div>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FFmpeg.wasm 完整测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: 0 auto; }
+    .log { background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 10px 0; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .info { color: blue; }
+    .warning { color: orange; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 14px; }
+    .result { margin: 20px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px; }
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+    .video-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+    .video-card h4 { margin: 0 0 10px 0; }
+    .progress-bar { width: 100%; height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #4CAF50, #8BC34A); transition: width 0.3s; }
+    video { width: 100%; max-width: 400px; margin: 10px 0; }
+    .test-section { margin: 30px 0; }
+    select { padding: 8px; font-size: 14px; }
+    input[type="text"] { padding: 8px; font-size: 14px; width: 400px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 FFmpeg.wasm 完整测试 (0.11.x)</h1>
+  
+  <!-- 系统检测 -->
+  <div class="result">
+    <h3> 系统检测</h3>
+    <div id="system-check">检测中...</div>
+  </div>
+  
+  <!-- GitHub 视频选择 -->
+  <div class="result test-section">
+    <h3>📁 测试视频源</h3>
+    <div style="margin: 10px 0;">
+      <label>GitHub 仓库基础 URL：</label><br>
+      <input type="text" id="github-base-url" value="https://raw.githubusercontent.com/AubreyDDun/video-image-tools/main/public/test-videos" style="width: 100%; margin: 5px 0;">
+    </div>
+    
+    <div class="video-grid" id="video-list">
+      <!-- 视频列表会动态加载 -->
+    </div>
+    
+    <div style="margin: 20px 0;">
+      <button onclick="loadVideoList()">🔄 加载视频列表</button>
+      <button onclick="runAllTests()">▶️ 运行全部测试</button>
+    </div>
+  </div>
+  
+  <!-- 本地文件上传（备选） -->
+  <div class="result test-section">
+    <h3>📤 本地文件上传（备选）</h3>
+    <input type="file" id="localFileInput" accept="video/*">
+    <button onclick="testLocalFile()">测试本地文件</button>
+  </div>
+  
+  <!-- 测试日志 -->
+  <div class="result test-section">
+    <h3>📝 实时日志：</h3>
+    <div class="log" id="log"></div>
+    <button onclick="document.getElementById('log').innerHTML=''" style="margin-top:10px;">🗑️ 清空日志</button>
+  </div>
+  
+  <script>
+    const log = (msg, type = 'info') => {
+      const div = document.createElement('div');
+      div.className = type;
+      const timestamp = new Date().toLocaleTimeString();
+      div.textContent = `[${timestamp}] ${msg}`;
+      document.getElementById('log').appendChild(div);
+      document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+      console.log(msg);
+    };
+    
+    // 系统检测
+    function runSystemCheck() {
+      const checkDiv = document.getElementById('system-check');
+      const checks = [];
+      
+      // 1. SharedArrayBuffer
+      if (typeof SharedArrayBuffer === 'undefined') {
+        checks.push('<span class="error">❌ SharedArrayBuffer 不可用</span>');
+        log('SharedArrayBuffer 不可用', 'error');
+      } else if (crossOriginIsolated) {
+        checks.push('<span class="success">✅ SharedArrayBuffer 可用 (crossOriginIsolated=true)</span>');
+        log('SharedArrayBuffer 可用，crossOriginIsolated=true', 'success');
+      } else {
+        checks.push('<span class="warning">⚠️ SharedArrayBuffer 存在但 crossOriginIsolated=false</span>');
+        log('SharedArrayBuffer 存在但 crossOriginIsolated=false', 'warning');
+      }
+      
+      // 2. WebAssembly
+      if (typeof WebAssembly === 'object') {
+        checks.push('<span class="success">✅ WebAssembly 支持</span>');
+      } else {
+        checks.push('<span class="error">❌ WebAssembly 不支持</span>');
+      }
+      
+      // 3. FileReader
+      if (typeof FileReader !== 'undefined') {
+        checks.push('<span class="success">✅ FileReader 支持</span>');
+      } else {
+        checks.push('<span class="error">❌ FileReader 不支持</span>');
+      }
+      
+      // 4. 浏览器信息
+      const userAgent = navigator.userAgent;
+      checks.push(`<span class="info">🌐 浏览器：${userAgent}</span>`);
+      
+      checkDiv.innerHTML = checks.join('<br>');
+    }
+    
+    // 加载视频列表
+    async function loadVideoList() {
+      const baseUrl = document.getElementById('github-base-url').value;
+      const videoListDiv = document.getElementById('video-list');
+      
+      log('正在加载视频列表...', 'info');
+      
+      // 预定义视频列表（根据实际上传的文件）
+      const videos = [
+        { name: 'banner.mp4', desc: 'H.264 编码 (1.8MB)', size: '1.8MB' },
+        { name: 'h265.mp4', desc: 'HEVC/H.265 编码 (14MB)', size: '14MB' },
+        { name: '9s.mov', desc: 'iPhone MOV 格式 (8.8MB)', size: '8.8MB' },
+        { name: 'file.avi', desc: 'AVI 格式 (726KB)', size: '726KB' }
+      ];
+      
+      videoListDiv.innerHTML = '';
+      
+      videos.forEach((video, index) => {
+        const url = `${baseUrl}/${encodeURIComponent(video.name)}`;
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        card.innerHTML = `
+          <h4>${index + 1}. ${video.name}</h4>
+          <p>${video.desc}</p>
+          <p><small>URL: ${url}</small></p>
+          <button onclick="testVideoFromUrl('${url}', '${video.name}')">▶️ 测试此视频</button>
+          <div id="progress-${index}" class="progress-bar" style="display:none;">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div id="result-${index}" style="margin-top:10px;"></div>
+        `;
+        videoListDiv.appendChild(card);
+      });
+      
+      log(`已加载 ${videos.length} 个测试视频`, 'success');
+    }
+    
+    // 从 URL 测试视频
+    async function testVideoFromUrl(videoUrl, videoName) {
+      const cardIndex = Array.from(document.querySelectorAll('.video-card')).findIndex(card => 
+        card.textContent.includes(videoName)
+      );
+      
+      if (cardIndex === -1) {
+        log(`未找到视频卡片：${videoName}`, 'error');
+        return;
+      }
+      
+      const progressDiv = document.getElementById(`progress-${cardIndex}`);
+      const resultDiv = document.getElementById(`result-${cardIndex}`);
+      const progressFill = progressDiv.querySelector('.progress-fill');
+      
+      progressDiv.style.display = 'block';
+      resultDiv.innerHTML = '';
+      
+      try {
+        log(`开始测试：${videoName}`, 'info');
+        log(`视频 URL: ${videoUrl}`, 'info');
+        
+        // 1. 加载 FFmpeg.wasm
+        if (!window.ffmpeg) {
+          log('加载 FFmpeg.wasm 脚本...', 'info');
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('FFmpeg 脚本加载失败'));
+            document.head.appendChild(script);
+          });
+          
+          const { createFFmpeg, fetchFile } = FFmpeg;
+          window.ffmpeg = createFFmpeg({
+            corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+            log: true,
+          });
+          window.fetchFile = fetchFile;
+          
+          log('加载 FFmpeg core...', 'info');
+          await window.ffmpeg.load();
+          log('✅ FFmpeg.wasm 加载成功', 'success');
+        }
+        
+        progressFill.style.width = '20%';
+        
+        // 2. 下载视频
+        log('下载视频文件...', 'info');
+        const response = await fetch(videoUrl);
+        if (!response.ok) throw new Error(`下载失败：${response.status} ${response.statusText}`);
+        const blob = await response.blob();
+        const file = new File([blob], videoName, { type: blob.type });
+        log(`✅ 视频下载完成：${(file.size / 1024 / 1024).toFixed(2)} MB`, 'success');
+        
+        progressFill.style.width = '40%';
+        
+        // 3. 压缩视频
+        log('开始压缩视频...', 'info');
+        const inputName = 'input.mp4';
+        const outputName = 'output.mp4';
+        
+        window.ffmpeg.setProgress(({ ratio }) => {
+          const progress = 40 + ratio * 50;
+          progressFill.style.width = `${progress}%`;
+          log(`压缩进度：${Math.round(ratio * 100)}%`, 'info');
+        });
+        
+        window.ffmpeg.FS('writeFile', inputName, await window.fetchFile(file));
+        log('文件写入 FFmpeg 完成', 'info');
+        
+        await window.ffmpeg.run(
+          '-i', inputName,
+          '-c:v', 'libx264',
+          '-preset', 'medium',
+          '-crf', '23',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-movflags', '+faststart',
+          outputName
+        );
+        
+        log('✅ FFmpeg 压缩完成', 'success');
+        progressFill.style.width = '90%';
+        
+        // 4. 读取输出
+        const outputData = window.ffmpeg.FS('readFile', outputName);
+        const outputBlob = new Blob([outputData.buffer], { type: 'video/mp4' });
+        log(`✅ 输出文件大小：${(outputBlob.size / 1024 / 1024).toFixed(2)} MB`, 'success');
+        
+        const compressionRatio = ((1 - outputBlob.size / file.size) * 100).toFixed(1);
+        log(`✅ 压缩率：${compressionRatio}%`, 'success');
+        
+        progressFill.style.width = '100%';
+        
+        // 5. 显示结果
+        const outputUrl = URL.createObjectURL(outputBlob);
+        resultDiv.innerHTML = `
+          <div class="success">✅ 测试成功！</div>
+          <p>原始大小：${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+          <p>压缩后：${(outputBlob.size / 1024 / 1024).toFixed(2)} MB</p>
+          <p>压缩率：${compressionRatio}%</p>
+          <video controls src="${outputUrl}"></video>
+          <br>
+          <a href="${outputUrl}" download="compressed_${videoName}">
+            <button>⬇️ 下载压缩后的视频</button>
+          </a>
+        `;
+        
+        // 清理
+        window.ffmpeg.FS('unlink', inputName);
+        window.ffmpeg.FS('unlink', outputName);
+        
+        log(`🎉 ${videoName} 测试完成！`, 'success');
+        
+      } catch (error) {
+        log(`❌ 测试失败：${error.message}`, 'error');
+        console.error('详细错误:', error);
+        resultDiv.innerHTML = `<div class="error">❌ 测试失败：${error.message}</div>`;
+        progressDiv.style.display = 'none';
+      }
+    }
+    
+    // 运行全部测试
+    async function runAllTests() {
+      log('========== 开始批量测试 ==========', 'info');
+      const videoCards = document.querySelectorAll('.video-card');
+      
+      for (let i = 0; i < videoCards.length; i++) {
+        const card = videoCards[i];
+        const videoName = card.querySelector('h4').textContent.split('. ')[1];
+        const baseUrl = document.getElementById('github-base-url').value;
+        const videoUrl = `${baseUrl}/${encodeURIComponent(videoName)}`;
+        
+        log(`\n--- 测试 ${i + 1}/${videoCards.length}: ${videoName} ---`, 'info');
+        await testVideoFromUrl(videoUrl, videoName);
+        
+        // 等待 2 秒再进行下一个测试
+        if (i < videoCards.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      log('========== 全部测试完成 ==========', 'success');
+    }
+    
+    // 测试本地文件
+    async function testLocalFile() {
+      const fileInput = document.getElementById('localFileInput');
+      if (!fileInput.files[0]) {
+        alert('请先选择一个文件');
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      log(`开始测试本地文件：${file.name}`, 'info');
+      
+      // 创建一个临时 URL 来模拟
+      const tempUrl = URL.createObjectURL(file);
+      const tempName = file.name;
+      
+      // 重用 URL 测试逻辑
+      await testVideoFromUrl(tempUrl, tempName);
+    }
+    
+    // 页面加载时运行
+    runSystemCheck();
+    log('测试页面已加载，点击"加载视频列表"开始', 'info');
+  </script>
+</body>
+</html>

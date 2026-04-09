@@ -14,32 +14,37 @@ export default function VideoCompressPage() {
   const [result, setResult] = useState<{ blob: Blob; size: number } | null>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  const addLog = (msg: string) => {
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
 
   const handleCompress = async () => {
     if (!file) return;
 
     setLoading(true);
     setStatus('processing');
-    setProgress(10);
+    setProgress(0);
     setError('');
+    setDebugLog([]);
+    addLog(`开始压缩：${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
     try {
-      // 模拟进度更新（FFmpeg.wasm 不提供进度回调）
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 5, 90));
-      }, 500);
-
-      setProgress(30);
-      const result = await compressVideo(file, quality / 100);
+      const result = await compressVideo(file, quality / 100, (p) => {
+        setProgress(p);
+        addLog(`进度：${p}%`);
+      });
       
-      clearInterval(progressInterval);
-      setProgress(100);
       setResult(result);
       setStatus('complete');
+      addLog(`压缩完成：${(result.size / 1024 / 1024).toFixed(2)} MB`);
     } catch (err) {
       console.error('压缩失败:', err);
-      setError(err instanceof Error ? err.message : '压缩失败，请检查视频格式');
+      const errMsg = err instanceof Error ? err.message : '压缩失败';
+      setError(errMsg);
       setStatus('error');
+      addLog(`错误：${errMsg}`);
     } finally {
       setLoading(false);
     }
@@ -53,25 +58,43 @@ export default function VideoCompressPage() {
   const getVideoFormat = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase();
     const formats: Record<string, string> = {
-      'mp4': 'MP4 (H.264)',
-      'mov': 'MOV (iPhone)',
+      'mp4': 'MP4 (H.264/AAC)',
+      'mov': 'MOV (iPhone/QuickTime)',
       'avi': 'AVI',
-      'webm': 'WebM',
+      'webm': 'WebM (VP8/VP9)',
       'mkv': 'MKV',
-      'm4v': 'M4V',
+      'm4v': 'M4V (iTunes)',
       'hevc': 'HEVC/H.265',
       'h265': 'HEVC/H.265',
+      '3gp': '3GP',
+      'wmv': 'WMV',
+      'flv': 'FLV',
     };
-    return formats[ext || ''] || ext?.toUpperCase();
+    return formats[ext || ''] || ext?.toUpperCase() || '未知格式';
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">视频压缩</h1>
         <p className="text-gray-600 dark:text-gray-300">
-          在线压缩视频文件，支持 MP4、MOV、HEVC 等格式
+          在线压缩视频文件，支持 MP4、MOV、HEVC、AVI、WebM 等格式
+        </p>
+      </div>
+
+      {/* Supported Formats */}
+      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <h3 className="font-medium text-gray-900 dark:text-white mb-2">📁 支持的输入格式：</h3>
+        <div className="flex flex-wrap gap-2">
+          {['MP4', 'MOV', 'AVI', 'WebM', 'MKV', 'M4V', 'HEVC/H.265', '3GP', 'WMV', 'FLV'].map((fmt) => (
+            <span key={fmt} className="px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full border border-gray-200 dark:border-gray-700">
+              {fmt}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          💡 输出格式：MP4 (H.264 + AAC)，兼容所有设备和平台
         </p>
       </div>
 
@@ -98,7 +121,7 @@ export default function VideoCompressPage() {
       <FileUploader
         accept="video/*"
         onFileSelect={setFile}
-        label="选择视频文件（MP4、MOV、HEVC、AVI 等）"
+        label="选择视频文件（MP4、MOV、HEVC、AVI、WebM 等）"
       />
 
       {/* Quality Slider */}
@@ -155,6 +178,20 @@ export default function VideoCompressPage() {
         error={error}
       />
 
+      {/* Debug Log */}
+      {debugLog.length > 0 && (
+        <details className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg" open>
+          <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+            📝 调试日志
+          </summary>
+          <div className="mt-2 space-y-1 text-xs font-mono text-gray-600 dark:text-gray-400 max-h-96 overflow-y-auto">
+            {debugLog.map((log, i) => (
+              <div key={i}>{log}</div>
+            ))}
+          </div>
+        </details>
+      )}
+
       {/* Download */}
       {result && file && (
         <div className="space-y-4 p-6 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -186,6 +223,7 @@ export default function VideoCompressPage() {
               setStatus('idle');
               setError('');
               setProgress(0);
+              setDebugLog([]);
             }}
             className="w-full py-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
           >

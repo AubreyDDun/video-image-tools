@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FFmpeg.wasm 测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .log { background: #f5f5f5; padding: 10px; border-radius: 4px; margin: 10px 0; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    .result { margin: 20px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>🧪 FFmpeg.wasm 测试页面 (0.11.x)</h1>
+  
+  <div class="result">
+    <h3>测试 1: SharedArrayBuffer 支持</h3>
+    <div id="sab-test">等待测试...</div>
+  </div>
+  
+  <div class="result">
+    <h3>测试 2: FFmpeg.wasm 加载</h3>
+    <button onclick="testLoad()">加载 FFmpeg.wasm</button>
+    <div id="load-test">等待测试...</div>
+  </div>
+  
+  <div class="result">
+    <h3>测试 3: 视频压缩测试</h3>
+    <input type="file" id="videoInput" accept="video/*">
+    <button onclick="testCompress()">测试压缩</button>
+    <div id="compress-test">等待测试...</div>
+  </div>
+  
+  <h3>📝 日志：</h3>
+  <div class="log" id="log"></div>
+  
+  <script type="module">
+    const log = (msg, type = 'info') => {
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      document.getElementById('log').appendChild(div);
+      console.log(msg);
+    };
+    
+    // 测试 1: SharedArrayBuffer
+    window.testSAB = () => {
+      const sabTest = document.getElementById('sab-test');
+      if (typeof SharedArrayBuffer === 'undefined') {
+        sabTest.innerHTML = '<span class="error">❌ SharedArrayBuffer 不可用</span>';
+        log('SharedArrayBuffer 不可用', 'error');
+      } else if (crossOriginIsolated) {
+        sabTest.innerHTML = '<span class="success">✅ SharedArrayBuffer 可用 (crossOriginIsolated=true)</span>';
+        log('SharedArrayBuffer 可用，crossOriginIsolated=true', 'success');
+      } else {
+        sabTest.innerHTML = '<span class="info">⚠️ SharedArrayBuffer 存在但 crossOriginIsolated=false</span>';
+        log('SharedArrayBuffer 存在但 crossOriginIsolated=false', 'info');
+      }
+    };
+    
+    // 测试 2: 加载 FFmpeg.wasm 0.11.x
+    window.testLoad = async () => {
+      const loadTest = document.getElementById('load-test');
+      try {
+        log('开始加载 FFmpeg.wasm 0.11.x...');
+        loadTest.innerHTML = '<span class="info">⏳ 加载中...</span>';
+        
+        // 直接加载脚本而不是使用 ES modules
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('脚本加载失败'));
+          document.head.appendChild(script);
+        });
+        
+        log('FFmpeg 脚本加载完成');
+        
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        
+        log('创建 FFmpeg 实例...');
+        const ffmpeg = createFFmpeg({
+          corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+          log: true,
+        });
+        
+        log('加载 FFmpeg core...');
+        await ffmpeg.load();
+        
+        log('FFmpeg.wasm 0.11.x 加载成功！', 'success');
+        loadTest.innerHTML = '<span class="success">✅ FFmpeg.wasm 加载成功</span>';
+        
+        window.ffmpeg = ffmpeg;
+        window.fetchFile = fetchFile;
+      } catch (error) {
+        log(`FFmpeg.wasm 加载失败：${error.message}`, 'error');
+        loadTest.innerHTML = `<span class="error">❌ 加载失败：${error.message}</span>`;
+        console.error('详细错误:', error);
+      }
+    };
+    
+    // 测试 3: 视频压缩
+    window.testCompress = async () => {
+      const compressTest = document.getElementById('compress-test');
+      const fileInput = document.getElementById('videoInput');
+      
+      if (!fileInput.files[0]) {
+        alert('请先选择一个视频文件');
+        return;
+      }
+      
+      if (!window.ffmpeg) {
+        alert('请先加载 FFmpeg.wasm');
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      compressTest.innerHTML = '<span class="info">⏳ 处理中...</span>';
+      
+      try {
+        log(`开始处理文件：${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+        
+        const ffmpeg = window.ffmpeg;
+        
+        // 写入文件
+        log('写入文件到 FFmpeg...');
+        ffmpeg.FS('writeFile', 'input.mp4', await window.fetchFile(file));
+        
+        // 执行压缩
+        log('执行 FFmpeg 命令...');
+        await ffmpeg.run(
+          '-i', 'input.mp4',
+          '-c:v', 'libx264',
+          '-preset', 'medium',
+          '-crf', '23',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          'output.mp4'
+        );
+        
+        // 读取输出
+        log('读取输出文件...');
+        const data = ffmpeg.FS('readFile', 'output.mp4');
+        
+        // 创建 Blob
+        const blob = new Blob([data.buffer], { type: 'video/mp4' });
+        log(`压缩完成！输出大小：${(blob.size / 1024 / 1024).toFixed(2)} MB`, 'success');
+        
+        // 创建下载链接
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `compressed_${file.name}`;
+        a.textContent = '⬇️ 下载压缩后的视频';
+        a.style.display = 'block';
+        a.style.marginTop = '10px';
+        compressTest.innerHTML = '<span class="success">✅ 压缩成功！</span>';
+        compressTest.appendChild(a);
+        
+        // 清理
+        ffmpeg.FS('unlink', 'input.mp4');
+        ffmpeg.FS('unlink', 'output.mp4');
+        
+      } catch (error) {
+        log(`压缩失败：${error.message}`, 'error');
+        compressTest.innerHTML = `<span class="error">❌ 压缩失败：${error.message}</span>`;
+      }
+    };
+    
+    // 页面加载时运行 SAB 测试
+    testSAB();
+    
+    log('测试页面已加载');
+  </script>
+</body>
+</html>
