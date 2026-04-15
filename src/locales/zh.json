@@ -1,23 +1,12 @@
 {
-  "Common": {
-    "loading": "加载中...",
-    "processing": "处理中...",
-    "success": "成功",
-    "error": "错误",
-    "download": "下载",
-    "upload": "上传",
-    "cancel": "取消",
-    "reset": "重置"
-  },
-  "Navigation": {
+  "nav": {
+    "title": "🎬 视频工具站",
     "home": "首页",
     "videoCompress": "视频压缩",
     "videoConvert": "格式转换",
-    "imageCompress": "图片压缩",
-    "videoTools": "视频工具",
-    "imageTools": "图片工具"
+    "imageCompress": "图片压缩"
   },
-  "HomePage": {
+  "home": {
     "title": "浏览器端视频工具站",
     "subtitle": "免费在线视频处理工具，所有处理都在您的浏览器中完成，文件不会上传到服务器",
     "features": {
@@ -45,103 +34,62 @@
       }
     }
   },
-  "VideoCompress": {
+  "tools": {
+    "videoCompress": {
+      "icon": "🗜️",
+      "title": "视频压缩",
+      "description": "压缩视频文件大小，保持画质，支持 MP4、MOV、HEVC 等格式"
+    },
+    "videoConvert": {
+      "icon": "🔄",
+      "title": "视频格式转换",
+      "description": "转换视频格式，支持 MP4、WebM、MOV、AVI、GIF 互转"
+    },
+    "imageCompress": {
+      "icon": "🖼️",
+      "title": "图片压缩",
+      "description": "压缩图片文件，支持 JPG、PNG、WebP，可调节质量和尺寸"
+    }
+  },
+  "videoCompress": {
     "title": "视频压缩",
     "subtitle": "在线压缩视频文件，支持 MP4、MOV、HEVC、AVI、WebM 等格式",
     "supportedFormats": "支持的输入格式",
     "outputFormat": "输出格式：MP4 (H.264 + AAC)，兼容所有设备和平台",
-    "features": {
-      "local": {
-        "title": "本地处理",
-        "desc": "文件不上传服务器"
-      },
-      "codec": {
-        "title": "H.264/HEVC",
-        "desc": "支持 iPhone 格式"
-      },
-      "quality": {
-        "title": "可调质量",
-        "desc": "自由控制压缩比"
-      }
-    },
     "uploadLabel": "选择视频文件（MP4、MOV、HEVC、AVI、WebM 等）",
     "quality": "压缩质量",
     "highCompression": "高压缩 (30%)",
     "lowCompression": "低压缩 (100%)",
-    "fileFormat": "文件格式",
     "originalSize": "原始大小",
     "compressedSize": "压缩后",
     "startCompress": "开始压缩",
     "compressionRatio": "压缩率",
     "spaceSaved": "节省了 {ratio}% 的空间",
-    "downloadLabel": "下载压缩后的视频",
+    "download": "下载压缩后的视频",
     "compressAnother": "压缩另一个文件"
   },
-  "VideoConvert": {
+  "videoConvert": {
     "title": "视频格式转换",
     "subtitle": "在线转换视频格式，支持 MP4、WebM、MOV、AVI、GIF",
-    "features": {
-      "local": {
-        "title": "本地处理",
-        "desc": "文件不上传服务器"
-      },
-      "fast": {
-        "title": "快速转换",
-        "desc": "多线程处理"
-      },
-      "quality": {
-        "title": "高质量",
-        "desc": "保持原始画质"
-      }
-    },
     "uploadLabel": "选择视频文件（MP4、MOV、HEVC、AVI、WebM 等）",
     "selectFormat": "选择目标格式",
     "formats": {
-      "mp4": {
-        "label": "MP4",
-        "desc": "最通用，兼容性好"
-      },
-      "webm": {
-        "label": "WebM",
-        "desc": "网页优化，体积小"
-      },
-      "mov": {
-        "label": "MOV",
-        "desc": "Apple 设备"
-      },
-      "avi": {
-        "label": "AVI",
-        "desc": "传统格式"
-      },
-      "gif": {
-        "label": "GIF",
-        "desc": "动图格式"
-      }
+      "mp4": {"label": "MP4", "desc": "最通用，兼容性好"},
+      "webm": {"label": "WebM", "desc": "网页优化，体积小"},
+      "mov": {"label": "MOV", "desc": "Apple 设备"},
+      "avi": {"label": "AVI", "desc": "传统格式"},
+      "gif": {"label": "GIF", "desc": "动图格式"}
     },
     "originalFormat": "原始格式",
     "convertedFormat": "转换后",
     "fileSize": "文件大小",
     "startConvert": "转换为 {format}",
-    "downloadLabel": "下载转换后的视频",
+    "download": "下载转换后的视频",
     "convertAnother": "转换另一个文件"
   },
-  "ImageCompress": {
+  "imageCompress": {
     "title": "图片压缩",
     "subtitle": "在线压缩图片，支持 JPG、PNG、WebP 格式",
-    "features": {
-      "local": {
-        "title": "本地处理",
-        "desc": "文件不上传服务器"
-      },
-      "fast": {
-        "title": "快速压缩",
-        "desc": "批量处理支持"
-      },
-      "quality": {
-        "title": "可调质量",
-        "desc": "自由控制大小"
-      }
-    },
     "uploadLabel": "选择图片文件（JPG、PNG、WebP）",
     "quality": "压缩质量",
     "maxSize": "最大边长（像素）",
@@ -152,15 +100,25 @@
     "startCompress": "开始压缩",
     "compressionRatio": "压缩率",
     "spaceSaved": "节省了 {ratio}% 的空间",
-    "downloadLabel": "下载压缩后的图片",
+    "download": "下载压缩后的图片",
     "compressAnother": "压缩另一张图片"
   },
-  "Footer": {
+  "footer": {
     "toolList": "工具列表",
     "aboutUs": "关于我们",
     "support": "技术支持",
     "aboutDesc": "免费在线视频处理工具，所有处理在浏览器本地完成，保护您的隐私安全。支持 MP4、MOV、HEVC 等格式。",
     "contactDesc": "如有问题或建议，请联系我们。",
     "copyright": "© 2026 视频工具站。All rights reserved."
+  },
+  "common": {
+    "loading": "加载中...",
+    "processing": "处理中...",
+    "success": "成功",
+    "error": "错误",
+    "download": "下载",
+    "upload": "上传",
+    "cancel": "取消",
+    "reset": "重置"
   }
 }

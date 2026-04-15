@@ -1,25 +1,14 @@
 {
-  "Common": {
-    "loading": "Loading...",
-    "processing": "Processing...",
-    "success": "Success",
-    "error": "Error",
-    "download": "Download",
-    "upload": "Upload",
-    "cancel": "Cancel",
-    "reset": "Reset"
-  },
-  "Navigation": {
+  "nav": {
+    "title": "🎬 Video Tools",
     "home": "Home",
     "videoCompress": "Video Compress",
     "videoConvert": "Format Converter",
-    "imageCompress": "Image Compress",
-    "videoTools": "Video Tools",
-    "imageTools": "Image Tools"
+    "imageCompress": "Image Compress"
   },
-  "HomePage": {
+  "home": {
     "title": "Browser-Based Video Tools",
-    "subtitle": "Free online video processing tools. All processing happens in your browser - files are never uploaded to any server.",
+    "subtitle": "Free online video processing tools. All processing happens in your browser - files are never uploaded.",
     "features": {
       "secure": "Secure & Private",
       "fast": "Fast Processing",
@@ -45,103 +34,62 @@
       }
     }
   },
-  "VideoCompress": {
+  "tools": {
+    "videoCompress": {
+      "icon": "🗜️",
+      "title": "Video Compressor",
+      "description": "Compress video files while maintaining quality. Supports MP4, MOV, HEVC and more."
+    },
+    "videoConvert": {
+      "icon": "🔄",
+      "title": "Video Format Converter",
+      "description": "Convert between video formats. Supports MP4, WebM, MOV, AVI, GIF."
+    },
+    "imageCompress": {
+      "icon": "🖼️",
+      "title": "Image Compressor",
+      "description": "Compress images with adjustable quality. Supports JPG, PNG, WebP."
+    }
+  },
+  "videoCompress": {
     "title": "Video Compressor",
     "subtitle": "Compress video files online. Supports MP4, MOV, HEVC, AVI, WebM and more.",
     "supportedFormats": "Supported Input Formats",
     "outputFormat": "Output: MP4 (H.264 + AAC) - Compatible with all devices",
-    "features": {
-      "local": {
-        "title": "Local Processing",
-        "desc": "Files never leave your device"
-      },
-      "codec": {
-        "title": "H.264/HEVC",
-        "desc": "iPhone format support"
-      },
-      "quality": {
-        "title": "Adjustable Quality",
-        "desc": "Control compression ratio"
-      }
-    },
     "uploadLabel": "Select video file (MP4, MOV, HEVC, AVI, WebM, etc.)",
     "quality": "Compression Quality",
     "highCompression": "High Compression (30%)",
     "lowCompression": "Low Compression (100%)",
-    "fileFormat": "File Format",
     "originalSize": "Original Size",
     "compressedSize": "Compressed Size",
     "startCompress": "Start Compression",
     "compressionRatio": "Compression Ratio",
     "spaceSaved": "Saved {ratio}% of space",
-    "downloadLabel": "Download Compressed Video",
+    "download": "Download Compressed Video",
     "compressAnother": "Compress Another File"
   },
-  "VideoConvert": {
+  "videoConvert": {
     "title": "Video Format Converter",
     "subtitle": "Convert video formats online. Supports MP4, WebM, MOV, AVI, GIF.",
-    "features": {
-      "local": {
-        "title": "Local Processing",
-        "desc": "Files never leave your device"
-      },
-      "fast": {
-        "title": "Fast Conversion",
-        "desc": "Multi-threaded processing"
-      },
-      "quality": {
-        "title": "High Quality",
-        "desc": "Preserves original quality"
-      }
-    },
     "uploadLabel": "Select video file (MP4, MOV, HEVC, AVI, WebM, etc.)",
     "selectFormat": "Select Target Format",
     "formats": {
-      "mp4": {
-        "label": "MP4",
-        "desc": "Most compatible"
-      },
-      "webm": {
-        "label": "WebM",
-        "desc": "Web optimized, small size"
-      },
-      "mov": {
-        "label": "MOV",
-        "desc": "Apple devices"
-      },
-      "avi": {
-        "label": "AVI",
-        "desc": "Legacy format"
-      },
-      "gif": {
-        "label": "GIF",
-        "desc": "Animated format"
-      }
+      "mp4": {"label": "MP4", "desc": "Most compatible"},
+      "webm": {"label": "WebM", "desc": "Web optimized, small size"},
+      "mov": {"label": "MOV", "desc": "Apple devices"},
+      "avi": {"label": "AVI", "desc": "Legacy format"},
+      "gif": {"label": "GIF", "desc": "Animated format"}
     },
     "originalFormat": "Original Format",
     "convertedFormat": "Converted To",
     "fileSize": "File Size",
     "startConvert": "Convert to {format}",
-    "downloadLabel": "Download Converted Video",
+    "download": "Download Converted Video",
     "convertAnother": "Convert Another File"
   },
-  "ImageCompress": {
+  "imageCompress": {
     "title": "Image Compressor",
     "subtitle": "Compress images online. Supports JPG, PNG, WebP.",
-    "features": {
-      "local": {
-        "title": "Local Processing",
-        "desc": "Files never leave your device"
-      },
-      "fast": {
-        "title": "Fast Compression",
-        "desc": "Batch processing support"
-      },
-      "quality": {
-        "title": "Adjustable Quality",
-        "desc": "Control file size"
-      }
-    },
     "uploadLabel": "Select image file (JPG, PNG, WebP)",
     "quality": "Compression Quality",
     "maxSize": "Max Dimension (pixels)",
@@ -152,15 +100,25 @@
     "startCompress": "Start Compression",
     "compressionRatio": "Compression Ratio",
     "spaceSaved": "Saved {ratio}% of space",
-    "downloadLabel": "Download Compressed Image",
+    "download": "Download Compressed Image",
     "compressAnother": "Compress Another Image"
   },
-  "Footer": {
+  "footer": {
     "toolList": "Tools",
     "aboutUs": "About Us",
     "support": "Support",
     "aboutDesc": "Free online video processing tools. All processing happens locally in your browser, protecting your privacy. Supports MP4, MOV, HEVC and more.",
     "contactDesc": "If you have any questions or suggestions, please contact us.",
     "copyright": "© 2026 Video Tools. All rights reserved."
+  },
+  "common": {
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "success": "Success",
+    "error": "Error",
+    "download": "Download",
+    "upload": "Upload",
+    "cancel": "Cancel",
+    "reset": "Reset"
   }
 }

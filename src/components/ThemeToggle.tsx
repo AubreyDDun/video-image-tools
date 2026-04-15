@@ -1,10 +1,12 @@
 'use client';
 
 import { useTheme } from 'next-themes';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const t = useTranslations();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
       className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-      title={theme === 'dark' ? '切换到亮色模式' : '切换到暗色模式'}
+      title={theme === 'dark' ? 'Switch to light mode' : '切换到暗色模式'}
     >
       {theme === 'dark' ? (
         <span className="text-xl">☀️</span>
